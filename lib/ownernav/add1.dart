@@ -6,6 +6,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:p/components/navigation.dart';
 //import 'package:intl/intl.dart';
 
 class add1 extends StatefulWidget {
@@ -33,33 +34,39 @@ class _add1State extends State<add1> {
   List<String> roomOptions = ['Single', 'Double', 'Triple', 'Multi'];
   List<String> amenities = [];
 
-  String imageUrl = '';
   String? availability;
   String? genderPreference;
   String? roomtype;
+  List<String> imageUrls = [];
 
   Future<void> _pickImage() async {
     ImagePicker imagePicker = ImagePicker();
-    XFile? file = await imagePicker.pickImage(source: ImageSource.gallery);
+    List<XFile>? files = await imagePicker.pickMultiImage();
 
-    if (file == null) return;
-
-    String uniqueFileName = DateTime.now().millisecondsSinceEpoch.toString();
-    Reference referenceRoot = FirebaseStorage.instance.ref();
-    Reference referenceDirImages = referenceRoot.child('images');
-    Reference referenceImageToUpload = referenceDirImages.child(uniqueFileName);
+    if (files == null) return;
 
     try {
-      if (kIsWeb) {
-        // Handling for Flutter Web
-        Uint8List? data = await file.readAsBytes();
-        await referenceImageToUpload.putData(data);
-      } else {
-        // Handling for Flutter Mobile
-        File imageFile = File(file.path);
-        await referenceImageToUpload.putFile(imageFile);
+      for (var file in files) {
+        String uniqueFileName =
+            DateTime.now().millisecondsSinceEpoch.toString();
+        Reference referenceRoot = FirebaseStorage.instance.ref();
+        Reference referenceDirImages = referenceRoot.child('images');
+        Reference referenceImageToUpload =
+            referenceDirImages.child(uniqueFileName);
+
+        if (kIsWeb) {
+          Uint8List? data = await file.readAsBytes();
+          await referenceImageToUpload.putData(data);
+        } else {
+          File imageFile = File(file.path);
+          await referenceImageToUpload.putFile(imageFile);
+        }
+
+        String imageUrl = await referenceImageToUpload.getDownloadURL();
+        // Add imageUrl to a list to store all uploaded image URLs
+        imageUrls.add(
+            imageUrl); // Assume you have declared List<String> imageUrls = []; at the top
       }
-      imageUrl = await referenceImageToUpload.getDownloadURL();
       setState(() {}); // Update the UI
     } catch (error) {
       print(error);
@@ -68,7 +75,7 @@ class _add1State extends State<add1> {
 
   Future<void> _submitDetails() async {
     if (_formKey.currentState!.validate()) {
-      if (imageUrl.isEmpty) {
+      if (imageUrls.isEmpty) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('Please upload an image')));
         return;
@@ -86,7 +93,7 @@ class _add1State extends State<add1> {
         'availability': availability,
         'roomtype': roomtype,
         'amenities': amenities,
-        'imageUrl': imageUrl,
+        'imageUrls': imageUrls, // Include the imageUrls list here
       };
 
       await _reference.add(dataToSend);
@@ -395,15 +402,47 @@ class _add1State extends State<add1> {
               label: const Text('Upload Image'),
               onPressed: _pickImage,
             ),
-            if (imageUrl.isNotEmpty) Image.network(imageUrl),
+            SizedBox(height: 10),
+            Wrap(
+              spacing: 8.0,
+              children: imageUrls.asMap().entries.map((entry) {
+                int index = entry.key;
+                String imageUrl = entry.value;
+
+                return Stack(
+                  alignment: Alignment.topRight,
+                  children: [
+                    Image.network(
+                      imageUrl,
+                      width: 100,
+                      height: 100,
+                      fit: BoxFit.cover,
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.cancel),
+                      onPressed: () {
+                        setState(() {
+                          imageUrls.removeAt(index);
+                        });
+                      },
+                    ),
+                  ],
+                );
+              }).toList(),
+            ),
             SizedBox(height: 10),
             ElevatedButton(
               onPressed: _submitDetails,
               child: const Text('Submit'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor:
+                    Color.fromARGB(255, 194, 71, 175), // light pink color
+              ),
             ),
           ],
         ),
       ),
+      bottomNavigationBar: BottomNavigation(),
     );
   }
 }
