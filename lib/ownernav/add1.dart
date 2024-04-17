@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
@@ -25,18 +26,15 @@ class _add1State extends State<add1> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
-  final _rentController = TextEditingController();
   final CollectionReference _reference =
       FirebaseFirestore.instance.collection('accommodation');
 
-  List<String> availabilityOptions = ['Available', 'Not Available'];
   List<String> genderOptions = ['Male', 'Female', 'Any'];
-  List<String> roomOptions = ['Single', 'Double', 'Triple', 'Multi'];
+
   List<String> amenities = [];
 
-  String? availability;
   String? genderPreference;
-  String? roomtype;
+
   List<String> imageUrls = [];
 
   Future<void> _pickImage() async {
@@ -80,6 +78,12 @@ class _add1State extends State<add1> {
             .showSnackBar(SnackBar(content: Text('Please upload an image')));
         return;
       }
+      String? userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('User not logged in')));
+        return;
+      }
       Map<String, dynamic> dataToSend = {
         'accommodationName': _accnameController.text,
         'stateName': _stateNameController.text,
@@ -88,11 +92,11 @@ class _add1State extends State<add1> {
         'name': _nameController.text,
         'phone': _phoneController.text,
         'address': _addressController.text,
-        'rent': _rentController.text,
+
         'gender': genderPreference,
-        'availability': availability,
-        'roomtype': roomtype,
+
         'amenities': amenities,
+        'userId': userId,
         'imageUrls': imageUrls, // Include the imageUrls list here
       };
 
@@ -230,87 +234,25 @@ class _add1State extends State<add1> {
               },
             ),
             SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    value: availability,
-                    onChanged: (value) {
-                      setState(() {
-                        availability = value;
-                      });
-                    },
-                    items: availabilityOptions.map((option) {
-                      return DropdownMenuItem(
-                        value: option,
-                        child: Text(option),
-                      );
-                    }).toList(),
-                    decoration: InputDecoration(
-                      labelText: 'Availability',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-                SizedBox(width: 16),
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    value: genderPreference,
-                    onChanged: (value) {
-                      setState(() {
-                        genderPreference = value;
-                      });
-                    },
-                    items: genderOptions.map((option) {
-                      return DropdownMenuItem(
-                        value: option,
-                        child: Text(option),
-                      );
-                    }).toList(),
-                    decoration: InputDecoration(
-                      labelText: 'Gender Preference',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    value: roomtype,
-                    onChanged: (value) {
-                      setState(() {
-                        roomtype = value;
-                      });
-                    },
-                    items: roomOptions.map((option) {
-                      return DropdownMenuItem(
-                        value: option,
-                        child: Text(option),
-                      );
-                    }).toList(),
-                    decoration: InputDecoration(
-                      labelText: 'Room Type',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-              ],
+            DropdownButtonFormField<String>(
+              value: genderPreference,
+              onChanged: (value) {
+                setState(() {
+                  genderPreference = value;
+                });
+              },
+              items: genderOptions.map((option) {
+                return DropdownMenuItem(
+                  value: option,
+                  child: Text(option),
+                );
+              }).toList(),
+              decoration: InputDecoration(
+                labelText: 'Gender Preference',
+                border: OutlineInputBorder(),
+              ),
             ),
             SizedBox(height: 10),
-            TextFormField(
-              controller: _rentController,
-              decoration: InputDecoration(
-                labelText: 'RENT',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8.0),
-                ),
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter rent';
-                }
-                return null;
-              },
-            ),
             SizedBox(height: 16),
             Wrap(
               spacing: 8.0,
@@ -433,12 +375,17 @@ class _add1State extends State<add1> {
             SizedBox(height: 10),
             ElevatedButton(
               onPressed: _submitDetails,
-              child: const Text('Submit'),
+              child: Text(
+                'Submit',
+                style: TextStyle(
+                  color: Colors.black, // Change the text color to white
+                ),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor:
                     Color.fromARGB(255, 194, 71, 175), // light pink color
               ),
-            ),
+            )
           ],
         ),
       ),
