@@ -5,7 +5,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 //import 'package:p/loginpage/login1.dart';
 import 'package:p/loginpage/login3.dart';
-import 'package:p/owner/ow1.dart';
 import 'package:p/ownernav/home1.dart';
 import 'package:p/tenant/ten1.dart';
 

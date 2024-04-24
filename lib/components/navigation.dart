@@ -22,9 +22,7 @@ class _BottomNavigationState extends State<BottomNavigation> {
     home1(),
     add1(),
     chat(),
-    person(
-      title: '',
-    ),
+    person(),
   ];
 
   @override
@@ -42,7 +40,7 @@ class _BottomNavigationState extends State<BottomNavigation> {
         },
         currentIndex: _currentIndex,
         selectedItemColor: Colors.white,
-        backgroundColor: Color.fromARGB(255, 76, 92, 118),
+        backgroundColor: Color.fromARGB(255, 72, 11, 73),
         items: [
           BottomNavigationBarItem(
             label: '',

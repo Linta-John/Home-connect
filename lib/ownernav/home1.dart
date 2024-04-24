@@ -1,55 +1,101 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:p/components/navigation.dart';
+
+import 'package:p/ownernav/update.dart';
 
 class home1 extends StatefulWidget {
   @override
-  State<home1> createState() => _home1State();
+  _home1State createState() => _home1State();
 }
 
 class _home1State extends State<home1> {
-  List<String> properties = ['Property 1', 'Property 2', 'Property 3'];
+  String userId =
+      FirebaseAuth.instance.currentUser!.uid; // Replace with actual user ID
+  final User? user = FirebaseAuth.instance.currentUser;
 
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          children: [
-            Icon(Icons.home), // Home Icon
-            SizedBox(width: 8), // Spacer
-            Text('HOMECONNECT'), // Text
-          ],
-        ),
+      body: FutureBuilder<DocumentSnapshot>(
+        future:
+            FirebaseFirestore.instance.collection('users').doc(user!.uid).get(),
+        builder:
+            (BuildContext context, AsyncSnapshot<DocumentSnapshot> snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator());
+          } else {
+            if (snapshot.hasData && snapshot.data != null) {
+              Map<String, dynamic> userData =
+                  snapshot.data!.data() as Map<String, dynamic>;
+              String name = userData['name'] ?? '';
+              return buildview(context, name);
+            } else {
+              return Center(child: Text('No data found'));
+            }
+          }
+        },
       ),
-      body: Container(
-        color: Colors.black,
-        child: ListView.builder(
-          itemCount: properties.length,
-          itemBuilder: (context, index) {
-            return Card(
-              color: Colors.purple.shade700,
-              child: ListTile(
-                title: Text(
-                  properties[index],
-                  style: TextStyle(color: Colors.white),
-                ),
-                trailing: ElevatedButton(
-                  child: Text('Update'),
-                  onPressed: () {
-                    // Add functionality to update the property
+    );
+  }
+
+  @override
+  Widget buildview(BuildContext context, String name) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Welcome....,$name'),
+      ),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('accommodation')
+            .where('userId', isEqualTo: userId)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return Center(child: Text('Error fetching accommodations'));
+          }
+
+          List<String> accommodations =
+              snapshot.data!.docs.map((doc) => doc['name'] as String).toList();
+
+          if (accommodations.isEmpty) {
+            return Center(child: Text('No accommodations found'));
+          }
+
+          return Column(
+            children: [
+              Expanded(
+                child: ListView.builder(
+                  itemCount: accommodations.length,
+                  itemBuilder: (context, index) {
+                    return ListTile(
+                      title: Text(accommodations[index]),
+                      trailing: ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => update()),
+                          );
+                        },
+                        child: Text('Update'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color.fromARGB(255, 227, 73, 217),
+                          foregroundColor: Colors.black,
+                        ),
+                      ),
+                    );
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple,
-                  ),
                 ),
               ),
-            );
-          },
-        ),
+            ],
+          );
+        },
       ),
       bottomNavigationBar: BottomNavigation(),
     );
   }
 }
-
-// Ensure your BottomNavigation widget supports the dark theme too.

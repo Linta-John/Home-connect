@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:p/components/navigation.dart';
+import 'package:p/ownernav/add2.dart';
 //import 'package:intl/intl.dart';
 
 class add1 extends StatefulWidget {
@@ -30,10 +31,12 @@ class _add1State extends State<add1> {
       FirebaseFirestore.instance.collection('accommodation');
 
   List<String> genderOptions = ['Male', 'Female', 'Any'];
+  List<String> availableOptions = ['Available', 'Unavailable'];
 
   List<String> amenities = [];
 
   String? genderPreference;
+  String? avail;
 
   List<String> imageUrls = [];
 
@@ -92,7 +95,7 @@ class _add1State extends State<add1> {
         'name': _nameController.text,
         'phone': _phoneController.text,
         'address': _addressController.text,
-
+        'availability': avail,
         'gender': genderPreference,
 
         'amenities': amenities,
@@ -101,7 +104,10 @@ class _add1State extends State<add1> {
       };
 
       await _reference.add(dataToSend);
-      Navigator.pop(context);
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => add2()),
+      );
     }
   }
 
@@ -123,7 +129,7 @@ class _add1State extends State<add1> {
             TextFormField(
               controller: _accnameController,
               decoration: InputDecoration(
-                labelText: 'ACCOMMOMODATION NAME',
+                labelText: 'ACCOMODATION NAME',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8.0),
                 ),
@@ -253,6 +259,25 @@ class _add1State extends State<add1> {
               ),
             ),
             SizedBox(height: 10),
+            DropdownButtonFormField<String>(
+              value: avail,
+              onChanged: (value) {
+                setState(() {
+                  avail = value;
+                });
+              },
+              items: availableOptions.map((option) {
+                return DropdownMenuItem(
+                  value: option,
+                  child: Text(option),
+                );
+              }).toList(),
+              decoration: InputDecoration(
+                labelText: 'Availability',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: 10),
             SizedBox(height: 16),
             Wrap(
               spacing: 8.0,
@@ -344,7 +369,6 @@ class _add1State extends State<add1> {
               label: const Text('Upload Image'),
               onPressed: _pickImage,
             ),
-            SizedBox(height: 10),
             Wrap(
               spacing: 8.0,
               children: imageUrls.asMap().entries.map((entry) {
@@ -374,7 +398,9 @@ class _add1State extends State<add1> {
             ),
             SizedBox(height: 10),
             ElevatedButton(
-              onPressed: _submitDetails,
+              onPressed: () {
+                _submitDetails();
+              },
               child: Text(
                 'Submit',
                 style: TextStyle(
